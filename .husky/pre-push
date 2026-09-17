@@ -1,7 +1,9 @@
 # Cheap safety net before code leaves the machine:
 # type-check the frontend and run the backend unit suite.
+# Integration tests need PostGIS, so they stay in CI.
 echo "[pre-push] frontend type-check"
 pnpm --filter darukaa-web exec tsc --noEmit
 
 echo "[pre-push] backend unit tests"
-cd backend && python -m pytest tests/unit -q --no-cov
+# Run from backend/ so pytest and pydantic-settings find their config and .env.
+(cd backend && sh ../scripts/python.sh -m pytest tests/unit -q --no-cov)

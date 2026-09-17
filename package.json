@@ -31,7 +31,7 @@
     "backend/**/*.py": [
       "sh scripts/ruff.sh"
     ],
-    "*.{json,md,yml,yaml,css,html}": [
+    "**/*.{json,md,yml,yaml,css,html,cjs,mjs}": [
       "prettier --write"
     ]
   },

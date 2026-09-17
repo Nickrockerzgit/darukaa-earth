@@ -170,7 +170,7 @@ make dev            # PostGIS + API + web, with hot reload
 In a second terminal:
 
 ```bash
-make seed           # demo user, 5 projects, 9 sites, 3 years of metrics
+make seed           # demo user, 5 projects, 10 sites, 3 years of metrics
 ```
 
 |          |                                          |

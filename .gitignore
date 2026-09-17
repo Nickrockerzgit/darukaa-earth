@@ -39,3 +39,6 @@ Thumbs.db
 *.log
 .turbo/
 tmp/
+
+# Local editor/agent tooling, not part of the deliverable
+.claude/

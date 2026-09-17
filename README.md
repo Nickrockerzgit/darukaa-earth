@@ -58,19 +58,19 @@ by project type, with analytics in a side drawer.
 
 ## Tech stack
 
-| Layer         | Choice                                             | Why                                                                                                                   |
-| ------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Frontend      | React 18, Vite, TypeScript (strict)                | Fast builds; strict typing makes a contract change a build failure                                                    |
-| Map           | Mapbox GL JS via `react-map-gl` + `mapbox-gl-draw` | Required by the brief; drawing and data-driven styling built in                                                       |
-| Charts        | Highcharts + `highcharts-react-official`           | Required by the brief; strong time-series and multi-axis support                                                      |
-| Server state  | TanStack Query                                     | Caching, deduplication and invalidation are the real problem                                                          |
-| Session state | Zustand                                            | One small global slice; no Redux ceremony                                                                             |
-| Styling       | Tailwind CSS v4 + hand-built primitives            | Full design control, small bundle, no component-library lock-in                                                       |
-| Backend       | FastAPI (Python 3.12)                              | Pydantic validation, free OpenAPI docs, async, `mypy --strict` clean — [ADR-0001](docs/decisions/ADR-0001-fastapi.md) |
-| ORM           | SQLAlchemy 2.0 (async) + GeoAlchemy2               | Typed ORM with first-class PostGIS types                                                                              |
-| Database      | PostgreSQL 16 + PostGIS 3.4                        | Required by the brief; the geospatial work is genuinely PostGIS work                                                  |
-| Migrations    | Alembic                                            | Reversibility and drift are both enforced in CI                                                                       |
-| Hosting       | Render (API + database), Vercel (web)              | Free tiers, Docker-native, GitHub Actions integration                                                                 |
+| Layer         | Choice                                             | Why                                                                                                                              |
+| ------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Frontend      | React 18, Vite, TypeScript (strict)                | Fast builds; strict typing makes a contract change a build failure                                                               |
+| Map           | Mapbox GL JS via `react-map-gl` + `mapbox-gl-draw` | Required by the brief; drawing and data-driven styling built in                                                                  |
+| Charts        | Highcharts + `highcharts-react-official`           | Required by the brief; strong time-series and multi-axis support                                                                 |
+| Server state  | TanStack Query                                     | Caching, deduplication and invalidation are the real problem                                                                     |
+| Session state | Zustand                                            | One small global slice; no Redux ceremony                                                                                        |
+| Styling       | Tailwind CSS v4 + hand-built primitives            | Full design control, small bundle, no component-library lock-in                                                                  |
+| Backend       | FastAPI (Python 3.12)                              | Pydantic validation, free OpenAPI docs, async, `mypy --strict` clean — [ADR-0001](docs/decisions/ADR-0001-fastapi.md)            |
+| ORM           | SQLAlchemy 2.0 (async) + GeoAlchemy2               | Typed ORM with first-class PostGIS types                                                                                         |
+| Database      | PostgreSQL + PostGIS on Neon                       | Required by the brief; the geospatial work is genuinely PostGIS work                                                             |
+| Migrations    | Alembic                                            | Reversibility and drift are both enforced in CI                                                                                  |
+| Hosting       | Vercel (web), Render (API), Neon (database)        | Free tiers throughout; Neon's does not expire, Render's Postgres would — [ADR-0008](docs/decisions/ADR-0008-database-hosting.md) |
 
 ---
 
@@ -402,31 +402,96 @@ was rejected and what it costs.
 
 ## Deployment
 
-### Backend → Render
+Three providers, all on free tiers: **Neon** for the database, **Render** for the
+API, **Vercel** for the web app. Deploy in that order — each step needs a value
+from the previous one.
 
-1. **New → Blueprint**, point it at this repository. `render.yaml` provisions the
-   PostgreSQL 16 database and the Dockerised web service.
-2. Enable the **PostGIS** extension on the database (Render's dashboard, or
-   `CREATE EXTENSION postgis;`). Migration `0001` then enables `pg_trgm` and
-   `pgcrypto`.
-3. Set `CORS_ORIGINS` to the Vercel production domain. `SECRET_KEY` is generated
-   automatically and `DATABASE_URL` is wired from the database.
-4. Copy the **Deploy Hook URL** into the `RENDER_DEPLOY_HOOK_URL` repository
+### 1. Database → Neon
+
+Render's own Postgres is technically fine, but its free plan is **deleted 30
+days after creation**, which would take the demo down before anyone reviews it.
+Neon's free tier does not expire. Full reasoning in
+[ADR-0008](docs/decisions/ADR-0008-database-hosting.md).
+
+1. Create a project at [neon.tech](https://neon.tech) — region closest to your
+   Render region (e.g. `ap-southeast-1` for Render's Singapore).
+2. In the Neon SQL editor, enable PostGIS:
+
+   ```sql
+   CREATE EXTENSION IF NOT EXISTS postgis;
+   ```
+
+   Migration `0001` enables `pg_trgm` and `pgcrypto` itself.
+
+3. Copy **two** connection strings from the dashboard and change the driver on
+   each from `postgresql://` to `postgresql+asyncpg://`:
+
+   | Endpoint   | Host contains | Used by                          |
+   | ---------- | ------------- | -------------------------------- |
+   | **Pooled** | `-pooler.`    | the running API (`DATABASE_URL`) |
+   | **Direct** | no `-pooler.` | Alembic migrations               |
+
+   Migrations want a stable backend for DDL and advisory locks; the API wants
+   the pooler. Leave `?sslmode=require&channel_binding=require` in the string —
+   `app/db/session.py` strips the libpq-only parameters, requests TLS through
+   `connect_args`, and disables asyncpg's prepared-statement cache when it sees
+   a `-pooler.` host (PgBouncer in transaction mode breaks it otherwise).
+
+### 2. API → Render
+
+1. **New → Blueprint**, point it at this repository. `render.yaml` defines the
+   Dockerised web service; it deliberately does **not** provision a database.
+2. Set the two `sync: false` variables in the Render dashboard:
+   - `DATABASE_URL` — the **pooled** Neon string.
+   - `CORS_ORIGINS` — fill in after step 3, then redeploy.
+
+   `SECRET_KEY` is generated by Render automatically.
+
+3. Render runs `alembic upgrade head` as its pre-deploy command, so the schema
+   is applied before the new instance takes traffic. Confirm with:
+
+   ```bash
+   curl https://YOUR-API.onrender.com/health/ready
+   ```
+
+   That endpoint queries `PostGIS_Lib_Version()`, so a 200 means the API reached
+   Neon _and_ PostGIS is installed.
+
+4. Seed the demo data once, from your machine, against the **direct** endpoint:
+
+   ```bash
+   cd backend && DATABASE_URL="<direct-neon-url>" python -m app.db.seed
+   ```
+
+5. Copy the **Deploy Hook URL** into the `RENDER_DEPLOY_HOOK_URL` repository
    secret.
 
-### Frontend → Vercel
+### 3. Web → Vercel
 
-1. Import the repository. `vercel.json` sets the build command, output directory,
-   SPA rewrites and security headers.
-2. Environment variables: `VITE_API_BASE_URL` (the Render URL) and
-   `VITE_MAPBOX_TOKEN`.
-3. Run `vercel link` locally and copy `orgId` / `projectId` from
-   `.vercel/project.json` into the `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID` secrets.
+1. Import the repository. `vercel.json` sets the build command, output
+   directory, SPA rewrites and security headers.
+2. Environment variables:
+   - `VITE_API_BASE_URL` — the Render URL, no trailing slash.
+   - `VITE_MAPBOX_TOKEN` — a public `pk.` token.
+3. Go back to Render and set `CORS_ORIGINS` to the Vercel production domain,
+   then redeploy the API. Without this the browser blocks every API call.
+4. Run `vercel link` locally and copy `orgId` / `projectId` from
+   `.vercel/project.json` into the `VERCEL_ORG_ID` / `VERCEL_PROJECT_ID`
+   repository secrets, plus a `VERCEL_TOKEN`.
 
-### Then
+### 4. Wire up CI/CD
 
 Set the `API_URL` and `WEB_URL` repository variables, and protect `main`:
-require a pull request and both CI workflows.
+require a pull request and both CI workflows. After that, a merge to `main`
+deploys the API, waits for `/health/ready`, then deploys the web app.
+
+### Free-tier behaviour to expect
+
+- **Render** sleeps the API after ~15 minutes idle. The first request afterwards
+  takes ~30 seconds. This is worth stating in your submission note so a reviewer
+  does not read a cold start as a broken deployment.
+- **Neon** suspends compute when idle and resumes on the next connection, which
+  adds a few hundred milliseconds — not a manual step.
 
 ---
 

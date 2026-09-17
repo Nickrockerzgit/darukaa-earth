@@ -79,9 +79,19 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _reject_placeholder_secret_in_prod(self) -> Settings:
-        """Fail fast if the sample secret key leaks into a deployed environment."""
+        """Refuse to boot a deployed instance on the sample secret key.
+
+        Signing JWTs with a value published in ``.env.example`` would let
+        anyone mint a valid token, so this is a hard failure rather than a
+        warning.
+        """
         if self.is_production and "change-me" in self.secret_key.lower():
-            msg = "SECRET_KEY must be overridden in staging and production"
+            msg = (
+                "SECRET_KEY is still the placeholder from .env.example, which is "
+                "public. Set a real one on the host before deploying.\n"
+                "  Render:  Environment > SECRET_KEY > Generate\n"
+                '  Locally: python -c "import secrets; print(secrets.token_urlsafe(48))"'
+            )
             raise ValueError(msg)
         return self
 

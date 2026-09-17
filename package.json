@@ -1,0 +1,44 @@
+{
+  "name": "darukaa-earth",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Geospatial analytics platform for carbon and biodiversity projects",
+  "packageManager": "pnpm@10.27.0",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "pnpm --filter darukaa-web lint",
+    "web": "pnpm --filter darukaa-web",
+    "commitlint": "commitlint --edit"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.6.1",
+    "@commitlint/config-conventional": "^19.6.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.3.0",
+    "prettier": "^3.4.2",
+    "prettier-plugin-tailwindcss": "^0.6.14"
+  },
+  "lint-staged": {
+    "frontend/**/*.{ts,tsx}": [
+      "pnpm --filter darukaa-web exec eslint --fix --max-warnings=0",
+      "prettier --write"
+    ],
+    "backend/**/*.py": [
+      "sh scripts/ruff.sh"
+    ],
+    "*.{json,md,yml,yaml,css,html}": [
+      "prettier --write"
+    ]
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "msw"
+    ]
+  }
+}

@@ -1,0 +1,41 @@
+# ---- Node / frontend ----
+node_modules/
+dist/
+dist-ssr/
+build/
+.vite/
+coverage/
+*.local
+.pnpm-store/
+.eslintcache
+
+# ---- Python / backend ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# ---- Environment ----
+.env
+.env.*
+!.env.example
+
+# ---- Editors / OS ----
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.DS_Store
+Thumbs.db
+
+# ---- Misc ----
+*.log
+.turbo/
+tmp/

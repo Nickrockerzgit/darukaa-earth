@@ -1,0 +1,8 @@
+node_modules
+dist
+coverage
+htmlcov
+pnpm-lock.yaml
+package-lock.json
+backend/alembic/versions
+*.min.*

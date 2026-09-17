@@ -1,0 +1,118 @@
+name: Deploy
+
+# Deployment is gated on both CI workflows going green. `workflow_run` is what
+# makes that gate real: a direct `push` trigger here would race CI and could
+# ship a commit whose tests were still running.
+on:
+  workflow_run:
+    workflows: ['Backend CI', 'Frontend CI']
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  guard:
+    name: Check prerequisites
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    outputs:
+      should_deploy: ${{ steps.check.outputs.should_deploy }}
+    steps:
+      - id: check
+        run: echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+
+  deploy-api:
+    name: Deploy API to Render
+    needs: guard
+    if: needs.guard.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.API_URL }}
+    steps:
+      - name: Trigger Render deploy
+        # Render builds the Dockerfile and runs `alembic upgrade head` as its
+        # pre-deploy command (see render.yaml), so migrations apply before the
+        # new instance takes traffic.
+        run: |
+          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK_URL }}" ]; then
+            echo "::error::RENDER_DEPLOY_HOOK_URL is not configured."
+            exit 1
+          fi
+          curl --fail --silent --show-error -X POST "${{ secrets.RENDER_DEPLOY_HOOK_URL }}"
+
+      - name: Wait for the API to come back healthy
+        run: |
+          API_URL="${{ vars.API_URL }}"
+          if [ -z "$API_URL" ]; then
+            echo "::warning::API_URL variable is not set; skipping the smoke test."
+            exit 0
+          fi
+
+          echo "Polling $API_URL/health/ready"
+          for attempt in $(seq 1 40); do
+            if curl --fail --silent --max-time 10 "$API_URL/health/ready" > /tmp/health.json; then
+              cat /tmp/health.json
+              echo "API is ready after ${attempt} attempt(s)."
+              exit 0
+            fi
+            sleep 15
+          done
+
+          echo "::error::API did not become ready within 10 minutes."
+          exit 1
+
+  deploy-web:
+    name: Deploy web to Vercel
+    needs: [guard, deploy-api]
+    if: needs.guard.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.WEB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install Vercel CLI
+        run: pnpm add -g vercel@latest
+
+      - name: Pull Vercel production configuration
+        run: vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Build
+        run: vercel build --prod --token="${{ secrets.VERCEL_TOKEN }}"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Deploy
+        run: vercel deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}"
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+      - name: Smoke-test the deployed site
+        run: |
+          WEB_URL="${{ vars.WEB_URL }}"
+          if [ -z "$WEB_URL" ]; then
+            echo "::warning::WEB_URL variable is not set; skipping the smoke test."
+            exit 0
+          fi
+          curl --fail --silent --show-error --max-time 20 "$WEB_URL" > /dev/null
+          echo "Web deployment responded successfully."

@@ -47,11 +47,15 @@ def configure_logging(*, level: str = "INFO", json_output: bool = False) -> None
     structlog.configure(
         processors=[*shared_processors, renderer],
         wrapper_class=structlog.make_filtering_bound_logger(logging.getLevelNamesMapping()[level]),
-        logger_factory=structlog.PrintLoggerFactory(),
+        # Must be the stdlib factory, not PrintLoggerFactory: the
+        # `add_logger_name` processor reads `logger.name`, which a PrintLogger
+        # does not have. Pairing the two raises AttributeError on the very
+        # first log line, which is application startup.
+        logger_factory=structlog.stdlib.LoggerFactory(),
         cache_logger_on_first_use=True,
     )
 
-    logging.basicConfig(format="%(message)s", stream=sys.stdout, level=level)
+    logging.basicConfig(format="%(message)s", stream=sys.stdout, level=level, force=True)
     for noisy in ("uvicorn.access", "sqlalchemy.engine.Engine"):
         logging.getLogger(noisy).handlers.clear()
 

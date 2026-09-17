@@ -13,3 +13,4 @@ it costs — so a reviewer can disagree with the reasoning rather than guess at 
 | [0005](ADR-0005-hand-written-api-types.md) | Hand-written TypeScript API types          |
 | [0006](ADR-0006-token-storage.md)          | JWT storage in localStorage                |
 | [0007](ADR-0007-mapbox-layers.md)          | Mapbox layers over React map components    |
+| [0008](ADR-0008-database-hosting.md)       | Postgres on Neon, not on Render            |

@@ -11,6 +11,8 @@ from collections.abc import Sequence
 
 import geoalchemy2
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
+
 from alembic import op
 
 revision: str = "0002"
@@ -20,11 +22,23 @@ depends_on: str | Sequence[str] | None = None
 
 SRID = 4326
 
-user_role = sa.Enum("admin", "viewer", name="user_role")
-project_type = sa.Enum("carbon", "biodiversity", "mixed", name="project_type")
-project_status = sa.Enum("draft", "active", "archived", name="project_status")
-metric_category = sa.Enum("carbon", "biodiversity", "vegetation", name="metric_category")
-aggregation_type = sa.Enum("sum", "avg", "last", name="aggregation_type")
+# `create_type=False` is load-bearing. Without it SQLAlchemy emits CREATE TYPE
+# again as part of the first CREATE TABLE that references the enum, and the
+# migration dies with `type "user_role" already exists`. The types are created
+# once, explicitly, at the top of upgrade().
+user_role = postgresql.ENUM("admin", "viewer", name="user_role", create_type=False)
+project_type = postgresql.ENUM(
+    "carbon", "biodiversity", "mixed", name="project_type", create_type=False
+)
+project_status = postgresql.ENUM(
+    "draft", "active", "archived", name="project_status", create_type=False
+)
+metric_category = postgresql.ENUM(
+    "carbon", "biodiversity", "vegetation", name="metric_category", create_type=False
+)
+aggregation_type = postgresql.ENUM(
+    "sum", "avg", "last", name="aggregation_type", create_type=False
+)
 
 ENUMS = (user_role, project_type, project_status, metric_category, aggregation_type)
 

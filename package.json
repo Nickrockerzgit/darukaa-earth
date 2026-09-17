@@ -13,7 +13,8 @@
     "format:check": "prettier --check .",
     "lint": "pnpm --filter darukaa-web lint",
     "web": "pnpm --filter darukaa-web",
-    "commitlint": "commitlint --edit"
+    "commitlint": "commitlint --edit",
+    "validate:json": "node scripts/validate-json.mjs"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",
@@ -33,6 +34,10 @@
     ],
     "**/*.{json,md,yml,yaml,css,html,cjs,mjs}": [
       "prettier --write"
+    ],
+    "**/*.json": [
+      "prettier --write",
+      "node scripts/validate-json.mjs"
     ]
   },
   "pnpm": {

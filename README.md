@@ -468,8 +468,15 @@ Neon's free tier does not expire. Full reasoning in
 
 ### 3. Web → Vercel
 
-1. Import the repository. `vercel.json` sets the build command, output
-   directory, SPA rewrites and security headers.
+1. Import the repository, then set **Root Directory** to `frontend` in the
+   project settings. `frontend/vercel.json` lives there and sets the framework
+   preset, output directory, SPA rewrite and security headers.
+
+   The SPA rewrite is a plain `/(.*) → /index.html`. Vercel gives
+   [precedence to the filesystem before rewrites are applied](https://vercel.com/docs/project-configuration/vercel-json),
+   so real files under `/assets/` are served first and only unmatched routes
+   fall through to the app shell.
+
 2. Environment variables:
    - `VITE_API_BASE_URL` — the Render URL, no trailing slash.
    - `VITE_MAPBOX_TOKEN` — a public `pk.` token.

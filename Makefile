@@ -47,6 +47,7 @@ lint:
 	pnpm --filter darukaa-web lint
 	pnpm --filter darukaa-web typecheck
 	pnpm format:check
+	pnpm validate:json
 
 ## format: auto-fix formatting across the repo
 format:

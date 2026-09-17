@@ -45,6 +45,11 @@ jobs:
       - name: Prettier check
         run: pnpm format:check
 
+      # Prettier's JSON parser is lenient; this one is not. An invalid escape
+      # in vercel.json passed Prettier and only failed in the Vercel dashboard.
+      - name: Validate JSON strictly
+        run: pnpm validate:json
+
       - name: ESLint
         run: pnpm --filter darukaa-web lint
 

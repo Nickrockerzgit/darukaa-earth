@@ -1,12 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "vite",
-  "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm --filter darukaa-web build",
-  "outputDirectory": "frontend/dist",
+  "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/((?!assets/|favicon|leaf\.svg).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],

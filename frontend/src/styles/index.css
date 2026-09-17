@@ -1,0 +1,151 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens.
+ *
+ * The product is a map-first dashboard: satellite imagery occupies most of the
+ * screen, so the chrome is a dark, low-chroma surface that stays out of the
+ * way and keeps imagery and chart colours readable against it. Every colour
+ * the app uses is declared here, so a rebrand is a single-file change.
+ */
+@theme {
+  /* Surfaces: near-black through elevated panels. */
+  --color-surface-950: oklch(0.16 0.012 240);
+  --color-surface-900: oklch(0.2 0.014 240);
+  --color-surface-850: oklch(0.24 0.016 240);
+  --color-surface-800: oklch(0.29 0.018 240);
+  --color-surface-700: oklch(0.36 0.02 240);
+  --color-surface-600: oklch(0.46 0.02 240);
+
+  /* Text. */
+  --color-content-primary: oklch(0.97 0.005 240);
+  --color-content-secondary: oklch(0.79 0.012 240);
+  --color-content-muted: oklch(0.63 0.015 240);
+
+  /* Brand: a living-canopy green, distinct from the map's own greens. */
+  --color-brand-300: oklch(0.85 0.13 162);
+  --color-brand-400: oklch(0.78 0.16 162);
+  --color-brand-500: oklch(0.7 0.17 162);
+  --color-brand-600: oklch(0.6 0.16 162);
+  --color-brand-700: oklch(0.5 0.14 162);
+
+  /* Metric families, used by both the charts and the map legend so a colour
+     always means the same thing wherever it appears. */
+  --color-metric-carbon: oklch(0.72 0.16 162);
+  --color-metric-vegetation: oklch(0.78 0.15 128);
+  --color-metric-biodiversity: oklch(0.74 0.14 235);
+  --color-metric-neutral: oklch(0.72 0.02 240);
+
+  /* Status. */
+  --color-positive: oklch(0.76 0.16 155);
+  --color-negative: oklch(0.68 0.19 25);
+  --color-warning: oklch(0.8 0.15 80);
+  --color-info: oklch(0.74 0.13 240);
+
+  --font-sans: 'Inter var', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, monospace;
+
+  --radius-panel: 0.875rem;
+  --shadow-panel: 0 1px 2px oklch(0 0 0 / 0.3), 0 8px 24px -8px oklch(0 0 0 / 0.45);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-surface-800);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background-color: var(--color-surface-950);
+    color: var(--color-content-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* One visible, consistent focus ring everywhere - keyboard users should
+     never have to guess where they are. */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-surface-900);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-surface-700);
+    border-radius: 9999px;
+    border: 2px solid var(--color-surface-900);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-surface-600);
+  }
+}
+
+@layer components {
+  .panel {
+    background-color: var(--color-surface-900);
+    border: 1px solid var(--color-surface-800);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-panel);
+  }
+}
+
+@layer utilities {
+  /* Respect a user's reduced-motion preference across the whole app. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* Mapbox overrides: the default control chrome is light and clashes badly
+   with a dark dashboard. */
+.mapboxgl-ctrl-group {
+  background: var(--color-surface-900) !important;
+  border: 1px solid var(--color-surface-800) !important;
+  box-shadow: var(--shadow-panel) !important;
+}
+.mapboxgl-ctrl-group button + button {
+  border-top-color: var(--color-surface-800) !important;
+}
+.mapboxgl-ctrl-group button .mapboxgl-ctrl-icon {
+  filter: invert(1) hue-rotate(180deg);
+}
+.mapboxgl-popup-content {
+  background: var(--color-surface-900) !important;
+  color: var(--color-content-primary) !important;
+  border: 1px solid var(--color-surface-800);
+  border-radius: var(--radius-panel) !important;
+  padding: 0 !important;
+  box-shadow: var(--shadow-panel) !important;
+}
+.mapboxgl-popup-tip {
+  border-top-color: var(--color-surface-900) !important;
+  border-bottom-color: var(--color-surface-900) !important;
+}
+.mapboxgl-popup-close-button {
+  color: var(--color-content-muted) !important;
+  font-size: 1.1rem;
+  padding: 0.25rem 0.5rem;
+}
+.mapboxgl-ctrl-attrib {
+  background: oklch(0.16 0.012 240 / 0.8) !important;
+}
+.mapboxgl-ctrl-attrib a {
+  color: var(--color-content-muted) !important;
+}

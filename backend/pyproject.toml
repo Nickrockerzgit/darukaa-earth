@@ -1,0 +1,145 @@
+[project]
+name = "darukaa-api"
+version = "0.1.0"
+description = "Darukaa.Earth API - geospatial analytics for carbon and biodiversity projects"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.6",
+    "uvicorn[standard]>=0.34.0",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30.0",
+    "geoalchemy2>=0.16.0",
+    "alembic>=1.14.0",
+    "pydantic>=2.10.4",
+    "pydantic-settings>=2.7.0",
+    "email-validator>=2.2.0",
+    "pyjwt>=2.10.1",
+    "bcrypt>=4.2.1",
+    "shapely>=2.0.6",
+    "structlog>=24.4.0",
+    "python-json-logger>=3.2.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.25.0",
+    "pytest-cov>=6.0.0",
+    "httpx>=0.28.1",
+    "ruff>=0.8.6",
+    "mypy>=1.14.1",
+    "types-shapely>=2.0.0",
+    "faker>=33.1.0",
+]
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+# ---------------------------------------------------------------------------
+# Ruff - linting and formatting in one tool (replaces flake8 + isort + black)
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+    "TID",  # flake8-tidy-imports
+    "RUF",  # ruff-specific
+    "ASYNC",# flake8-async
+    "S",    # flake8-bandit (security)
+    "ARG",  # unused arguments
+    "PTH",  # prefer pathlib
+    "ERA",  # commented-out code
+    "PL",   # pylint subset
+    "BLE",  # flake8-blind-except
+    "D",    # pydocstyle
+]
+ignore = [
+    "D100",  # module docstring not required everywhere
+    "D104",  # package docstring not required
+    "D203",  # conflicts with D211
+    "D213",  # conflicts with D212
+    "B008",    # FastAPI Depends() in defaults is the documented idiom
+    "PLR0913", # DI-heavy signatures are normal in FastAPI
+    "PLR0917", # ditto: route handlers take deps + query params positionally
+    "D107",    # __init__ is documented by its class docstring
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests: asserts are the point; magic numbers are fixtures; a fixture
+# argument is often requested purely for its side effect.
+"tests/**" = ["S101", "S105", "S106", "D", "PLR2004", "ARG001", "ARG002"]
+"alembic/**" = ["D", "ERA001", "INP001"]
+"app/db/seed.py" = ["S311"]  # non-crypto RNG is intentional for demo data
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+# ---------------------------------------------------------------------------
+# mypy - static typing
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+warn_unreachable = true
+disallow_untyped_decorators = false
+exclude = ["alembic/versions/"]
+
+[[tool.mypy.overrides]]
+module = ["geoalchemy2.*", "shapely.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+addopts = [
+    "-q",
+    "--strict-markers",
+    "--cov=app",
+    "--cov-report=term-missing",
+    "--cov-report=xml",
+    "--cov-fail-under=80",
+]
+markers = [
+    "integration: tests that require a live PostGIS database",
+]
+
+[tool.coverage.run]
+branch = true
+omit = ["app/db/seed.py", "app/main.py", "alembic/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@abstractmethod",
+]

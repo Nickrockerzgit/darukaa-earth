@@ -1,0 +1,2 @@
+# Enforce Conventional Commits so the history stays readable.
+pnpm exec commitlint --edit "$1"

@@ -1,0 +1,2 @@
+# Format + lint only what is staged. Fast enough to run on every commit.
+pnpm exec lint-staged

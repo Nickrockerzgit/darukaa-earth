@@ -1,0 +1,7 @@
+# Cheap safety net before code leaves the machine:
+# type-check the frontend and run the backend unit suite.
+echo "[pre-push] frontend type-check"
+pnpm --filter darukaa-web exec tsc --noEmit
+
+echo "[pre-push] backend unit tests"
+cd backend && python -m pytest tests/unit -q --no-cov

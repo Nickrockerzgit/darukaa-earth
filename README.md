@@ -309,7 +309,7 @@ make test-frontend   # vitest with coverage
 | Suite               | Count | Approach                                                                        |
 | ------------------- | ----- | ------------------------------------------------------------------------------- |
 | Backend unit        | 50    | Security primitives, geometry conversion, the synthetic provider                |
-| Backend integration | 60+   | Every endpoint against **real PostGIS**, each test in a rolled-back transaction |
+| Backend integration | 68    | Every endpoint against **real PostGIS**, each test in a rolled-back transaction |
 | Frontend            | 144   | Vitest + Testing Library, with **MSW** intercepting at the network layer        |
 
 The tests assert behaviour that would be a bug, not that endpoints return 200:

@@ -5,11 +5,16 @@ Draw a project boundary on a map, and the platform tracks carbon sequestration,
 vegetation and biodiversity across it, month by month — so a claim is always
 traceable to a specific polygon and a specific date.
 
-|                |                                           |
-| -------------- | ----------------------------------------- |
-| **Live demo**  | [https://darukaa-earth-frontend-53xh.vercel.app] |
-| **API docs**   | _add_ `{API_URL}/docs`                    |
-| **Demo login** | `admin@darukaa.earth` / `DarukaaDemo123!` |
+|                |                                                                                          |
+| -------------- | ---------------------------------------------------------------------------------------- |
+| **Live demo**  | [darukaa-earth-frontend-53xh.vercel.app](https://darukaa-earth-frontend-53xh.vercel.app) |
+| **Live API**   | [darukaa-earth-4tf1.onrender.com](https://darukaa-earth-4tf1.onrender.com)               |
+| **API health** | [/health/ready](https://darukaa-earth-4tf1.onrender.com/health/ready)                    |
+| **Demo login** | `admin@darukaa.earth` / `DarukaaDemo123!`                                                |
+
+> The API runs on Render's free tier, which sleeps after ~15 minutes idle. The
+> first request after a quiet period takes about 30 seconds while the container
+> wakes; everything after that is immediate.
 
 ---
 
@@ -77,7 +82,7 @@ by project type, with analytics in a side drawer.
 ## Architecture
 
 ```
-  Browser ──HTTPS──▶ Vercel (static SPA) ──JSON/JWT──▶ Render (FastAPI) ──asyncpg──▶ PostgreSQL 16 + PostGIS
+  Browser ──HTTPS──▶ Vercel (static SPA) ──JSON/JWT──▶ Render (FastAPI) ──asyncpg──▶ PostgreSQL 18 + PostGIS
 
   Mapbox tiles are fetched by the browser directly and never transit our API.
 ```

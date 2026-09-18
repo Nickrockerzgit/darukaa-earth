@@ -59,11 +59,13 @@ class Project(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     project_type: Mapped[ProjectType] = mapped_column(
         pg_enum(ProjectType, "project_type"),
         default=ProjectType.CARBON,
+        server_default=ProjectType.CARBON.value,
         nullable=False,
     )
     status: Mapped[ProjectStatus] = mapped_column(
         pg_enum(ProjectStatus, "project_status"),
         default=ProjectStatus.DRAFT,
+        server_default=ProjectStatus.DRAFT.value,
         nullable=False,
     )
     start_date: Mapped[date | None] = mapped_column(Date)

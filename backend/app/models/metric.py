@@ -15,6 +15,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
+    BigInteger,
     Date,
     Float,
     ForeignKey,
@@ -72,10 +73,13 @@ class MetricDefinition(TimestampMixin, Base):
     aggregation: Mapped[AggregationType] = mapped_column(
         pg_enum(AggregationType, "aggregation_type"),
         default=AggregationType.AVG,
+        server_default=AggregationType.AVG.value,
         nullable=False,
     )
     #: Ordering hint so the UI lists metrics consistently without hardcoding.
-    display_order: Mapped[int] = mapped_column(Integer, default=100, nullable=False)
+    display_order: Mapped[int] = mapped_column(
+        Integer, default=100, server_default="100", nullable=False
+    )
 
     samples: Mapped[list[SiteMetric]] = relationship(back_populates="definition", lazy="noload")
 
@@ -89,7 +93,9 @@ class SiteMetric(Base):
         Index("ix_site_metrics_lookup", "site_id", "metric_id", "recorded_at"),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    # BigInteger: this table grows as metrics x months x sites, so a 32-bit
+    # key is the wrong ceiling. It also has to match migration 0002.
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     site_id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True),
         ForeignKey("sites.id", ondelete="CASCADE"),

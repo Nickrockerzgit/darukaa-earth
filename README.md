@@ -7,7 +7,7 @@ traceable to a specific polygon and a specific date.
 
 |                |                                           |
 | -------------- | ----------------------------------------- |
-| **Live demo**  | _add the Vercel URL here_                 |
+| **Live demo**  | [https://darukaa-earth-frontend-53xh.vercel.app] |
 | **API docs**   | _add_ `{API_URL}/docs`                    |
 | **Demo login** | `admin@darukaa.earth` / `DarukaaDemo123!` |
 

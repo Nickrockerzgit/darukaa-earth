@@ -17,6 +17,7 @@ import uuid
 from collections.abc import AsyncGenerator, Iterator
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 import pytest
 from alembic.config import Config
@@ -40,12 +41,17 @@ BACKEND_ROOT = Path(__file__).resolve().parents[1]
 def _test_database_url() -> str:
     """Resolve the database the suite runs against.
 
-    Falls back to the primary URL with a ``_test`` suffix, so a developer who
-    has not set ``TEST_DATABASE_URL`` still cannot clobber their dev data.
+    Falls back to the primary URL with the database *name* suffixed, so a
+    developer who has not set ``TEST_DATABASE_URL`` still cannot clobber their
+    real data. The suffix goes on the path, not the whole URL: a managed
+    Postgres URL ends in a query string, and appending there would produce
+    ``?sslmode=require_test`` and connect to the wrong database.
     """
     if settings.test_database_url is not None:
         return str(settings.test_database_url)
-    return f"{settings.sqlalchemy_url}_test"
+
+    parts = urlsplit(settings.sqlalchemy_url)
+    return urlunsplit(parts._replace(path=f"{parts.path}_test"))
 
 
 @pytest.fixture(scope="session")
@@ -142,7 +148,7 @@ async def other_user(session: AsyncSession) -> User:
 async def _make_user(session: AsyncSession, prefix: str) -> User:
     """Persist a user with a unique email."""
     record = User(
-        email=f"{prefix}-{uuid.uuid4().hex[:8]}@darukaa.test",
+        email=f"{prefix}-{uuid.uuid4().hex[:8]}@example.com",
         hashed_password=hash_password("CorrectHorse123"),
         full_name=f"{prefix.title()} User",
     )

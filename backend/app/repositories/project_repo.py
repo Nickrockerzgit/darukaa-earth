@@ -7,7 +7,7 @@ from collections.abc import Sequence
 from typing import Any, NamedTuple
 
 from sqlalchemy import Select, func, select
-from sqlalchemy.orm import joinedload, noload
+from sqlalchemy.orm import noload
 
 from app.models.project import Project, ProjectStatus, ProjectType
 from app.models.site import Site
@@ -92,7 +92,13 @@ class ProjectRepository(BaseRepository[Project]):
             .order_by(Project.created_at.desc())
             .offset(offset)
             .limit(limit)
-            .options(noload(Project.sites), joinedload(Project.owner))
+            # Both relationships must be suppressed. `Project.owner` is
+            # `lazy="joined"` on the model, so leaving it alone would add the
+            # users columns to a SELECT that only groups by projects.id, and
+            # Postgres rejects that: "column users_1.email must appear in the
+            # GROUP BY clause". The owner is not needed here either - the
+            # response carries owner_id, which lives on projects.
+            .options(noload(Project.sites), noload(Project.owner))
         )
 
         result = await self.session.execute(statement)

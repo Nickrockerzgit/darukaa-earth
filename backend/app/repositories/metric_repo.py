@@ -149,6 +149,10 @@ class SiteMetricRepository(BaseRepository[SiteMetric]):
         )
         statement = (
             select(MetricDefinition.key, rolled)
+            # select_from is required: without it SQLAlchemy infers the FROM
+            # from the selected columns (metric_definitions) and then tries to
+            # join that table to itself. The subquery is the left side.
+            .select_from(latest)
             .join(MetricDefinition, MetricDefinition.id == latest.c.metric_id)
             .group_by(MetricDefinition.key)
         )

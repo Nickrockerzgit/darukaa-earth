@@ -14,7 +14,7 @@ from app.models.user import User
 pytestmark = pytest.mark.integration
 
 REGISTRATION = {
-    "email": "new.user@darukaa.test",
+    "email": "new.user@example.com",
     "password": "CorrectHorse123",
     "full_name": "New User",
 }
@@ -87,7 +87,7 @@ class TestLogin:
         # Differing responses here would turn login into an account-enumeration oracle.
         unknown = await client.post(
             "/api/v1/auth/login",
-            json={"email": "nobody@darukaa.test", "password": "CorrectHorse123"},
+            json={"email": "nobody@example.com", "password": "CorrectHorse123"},
         )
         wrong = await client.post(
             "/api/v1/auth/login", json={"email": user.email, "password": "WrongHorse123"}
@@ -97,7 +97,7 @@ class TestLogin:
 
     async def test_rejects_a_deactivated_account(self, client: AsyncClient, session: AsyncSession):
         user = User(
-            email="disabled@darukaa.test",
+            email="disabled@example.com",
             hashed_password=hash_password("CorrectHorse123"),
             is_active=False,
         )
